@@ -5,6 +5,8 @@
 - 学习STL
 - 练习算法和模板元编程
 ### 开发环境
-- Windows10 + Code::Blocks
+- Win10 + Code::Blocks
 ### 测试环境
-- Windows10 Centos
+- Win10 Centos
+### 进度
+- vector  done
