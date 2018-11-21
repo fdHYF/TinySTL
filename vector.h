@@ -77,7 +77,7 @@ namespace TinySTL
         void deallocate();
         iterator allocate_and_fill(size_type n,const T& value);
         template<class InputIterator>
-        iterator allocate_and_copy(InputIterator first,InputIterator last);
+        void allocate_and_copy(InputIterator first,InputIterator last);
         void insert_aux(iterator position,const T& value);
 
     private:
