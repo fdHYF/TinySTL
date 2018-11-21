@@ -7,7 +7,7 @@ namespace TinySTL
     template<class T,class Alloc>
     void vector<T,Alloc>::deallocate() {
         if(start)
-            data_allocator::deallocate(start,end_of_storage - start);
+            data_allocator::deallocate(start, end_of_storage - start);
     }
 
     template<class T,class Alloc>
@@ -27,12 +27,11 @@ namespace TinySTL
 
     template<class T,class Alloc>
     template<class InputIterator>
-    typename vector<T,Alloc>::iterator
+    void
     vector<T,Alloc>::allocate_and_copy(InputIterator first,InputIterator last) {
-        size_type n = (last - first);
-        iterator result = data_allocator::allocate(n);
-        uninitialized_copy(first,last,result);
-        return result + (first - last);
+        start = data_allocator::allocate(last - first);
+        finish = uninitialized_copy(first,last,start);
+        end_of_storage = finish;
     }
 
     template<class T,class Alloc>
@@ -76,16 +75,12 @@ namespace TinySTL
     template<class T,class Alloc>
     template<class InputIterator>
     vector<T,Alloc>::vector(InputIterator first,InputIterator last) {
-        start = allocate_and_copy(first,last);
-        finish = start + (last - first);
-        end_of_storage = finish;
+        allocate_and_copy(first,last);
     }
 
     template<class T,class Alloc>
     vector<T,Alloc>::vector(const vector& rhs) {
-        start = allocate_and_copy(rhs.start,rhs.finish);
-        finish = start + (rhs.finish - rhs.start);
-        end_of_storage = finish;
+        allocate_and_copy(rhs.start,rhs.finish);
     }
 
     template<class T,class Alloc>
@@ -97,9 +92,7 @@ namespace TinySTL
     template<class T,class Alloc>
     vector<T,Alloc>& vector<T,Alloc>::operator = (const vector& rhs) {
         if(this != &rhs) {  //处理自赋值情况
-            start = allocate_and_copy(rhs.start,rhs.finish);
-            finish = start + (rhs.finish - rhs.start);
-            end_of_storage = finish;
+            allocate_and_copy(rhs.start,rhs.finish);
         }
         return *this;
     }
