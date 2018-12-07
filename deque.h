@@ -1,143 +1,143 @@
-#ifndef LIST_H_INCLUDED
-#define LIST_H_INCLUDED
-
-#include "iterator.h"
+#ifndef DEQUE_H_INCLUDED
+#define DEQUE_H_INCLUDED
+#define MIN_NODE_SIZE 8
 #include "alloc.h"
+#include "construct.h"
+#include "iterator.h"
 
 namespace TinySTL
 {
-    namespace Base {
-        //list节点设计
-        template<class T>
-        struct _list_node {
-            T data;
-            _list_node<T>* prev;
-            _list_node<T>* next;
-
-            _list_node(const T& d, _list_node<T>* p, _list_node<T>* n) :
-                data(d), prev(p), next(n) {}
-            bool operator == (const _list_node& rhs) {
-                return data == rhs.data && prev == rhs.prev &&next == rhs.next;
-            }
-        };
-
-        //list迭代器设计
-        template<class T>
-        struct _list_iterator : public iterator<bidirectional_iterator_tag, T> {
-            template<class T1, class Alloc>
-            friend class list;
+    namespace Base
+    {
+        template<class T, size_t BufSize>
+        class _deque_iterator {//未采用继承
+            template<class T1, class Alloc, size_t Buf>
+            friend class deque;
         public:
-            using link_type = _list_node<T>*;
-            link_type p;
+            static size_t buffer_size() { return _deque_buf_size(BufSize, sizeof(T)); }
+            static inline size_t _deque_buf_size(size_t n, size_t sz) {
+                return n != 0 ? n : (sz < 512 ? size_t(512 / sz) : size_t(1));
+            }
 
-            //constructor
-            _list_iterator(link_type x) : p(x) {}
-            _list_iterator() {}
-            _list_iterator(const _list_iterator& x) : p(x.p) {}
+            using value_type            = T;
+            using pointer               = T*;
+            using reference             = T&;
+            using const_pointer         = const T*;
+            using const_reference       = const T&;
+            using difference_type       = ptrdiff_t;
+            using size_type             = size_t;
+            using iterator_category     = random_access_iterator_tag;
+            using map_pointer           = T**;
 
-            //迭代器操作
-            _list_iterator& operator++();
-            _list_iterator operator++(int);
-            _list_iterator& operator--();
-            _list_iterator operator--(int);
+            using self                  = _deque_iterator;
 
-            T& operator*() const { return p->data; }
-            T* operator->() const { return &(operator*()); }
+            reference operator*() const { return *cur; }
+            pointer operator->() const { return&(operator*()); }
+            difference_type operator-(const self& rhs) const;
+            self& operator++();
+            self operator++(int);
+            self& operator--();
+            self operator--(int);
+            self& operator+=(difference_type n);
+            self operator+(difference_type n) const;
+            self& operator-=(difference_type n) { return *this += -n; }
+            self operator-(difference_type n) const;
 
-            template<class T1>
-            friend bool operator == (const _list_iterator<T1>& lhs, const _list_iterator<T1>& rhs);
-            template<class T1>
-            friend bool operator != (const _list_iterator<T1>& lhs, const _list_iterator<T1>& rhs);
+            reference operator[](difference_type n) const { return *(*this + n); }
+
+            bool operator==(const self& rhs) const { return cur == rhs.cur; }
+            bool operator!=(const self& rhs) const { return !(*this == rhs); }
+
+        private:
+            void set_node(map_pointer new_node);        //到达缓冲区边缘，实现缓冲区跳跃(前进或后退)
+
+            T* cur;                                     //此迭代器所指缓冲区的当前元素
+            T* first;                                   //此迭代器所指缓冲区的头
+            T* last;                                    //此迭代器所指缓冲区的尾
+            map_pointer node;
         };
     }//end of namespace Base
 
-    template<class T, class Alloc = alloc>
-    class list {
+    template<class T, class Alloc = alloc, size_t BufSize = 0>
+    class deque {
+        template<class T1, class BufSize1>
+        friend class _deque_iterator;
     public:
-        template<class T1>
-        friend class _list_iterator;
-
-    public:
-        using value_type            = T;
-        using size_type             = size_t;
-        using reference             = T&;
-        using iterator              = Base::_list_iterator<T>;
-        using const_iterator        = Base::_list_iterator<const T>;
+        using value_type        = T;
+        using size_type         = size_t;
+        using pointer           = T*;
+        using map_pointer       = T**;
+        using reference         = T&;
+        using const_reference   = const T&;
+        using difference_type   = ptrdiff_t;
+        using iterator          = Base::_deque_iterator<T, BufSize>;
+        using const_iterator    = Base::_deque_iterator<const T, BufSize>;
+        static size_t buffer_size() {return _deque_buf_size(BufSize,sizeof(T));}
+        static size_t _deque_buf_size(size_t n,size_t sz){
+            return n!=0?n:(sz<512?size_t(512/sz):size_t(1));
+        }
 
     private:
-        using list_node             = Base::_list_node<T>;
-        using link_type             = list_node*;
-        using list_node_allocator   = simple_alloc<list_node, Alloc>;
-        link_type node;
+        iterator start;
+        iterator finish;
+        map_pointer map;
+        size_type map_size;
 
     public:
-        list() { empty_initialize(); }
-        list(size_type n, const T& value);
+        deque();
+        explicit deque(size_type n, const value_type& value);
+        explicit deque(size_type n);
         template<class InputIterator>
-        list(InputIterator first, InputIterator last);
-        list(const list& rhs);
-        list(list&& rhs) noexcept;
-        list& operator = (const list& rhs);
-        list& operator = (list&& rhs) noexcept;
-        ~list();
+        deque(InputIterator first, InputIterator last);
+        deque(const deque& rhs);
+        deque& operator=(const deque& rhs);
+        deque& operator=(deque&& rhs);
+        ~deque();
 
-        bool empty() const { return node->next == node; }
-        size_type size() const;
-        reference front() { return *begin(); }
-        reference back() { return *(--end()); }
+        iterator begin() { return start; }
+        iterator end() { return finish; }
+        reference operator[](size_type n) { return start[difference_type(n)]; }
+        reference front() { return *start; }
+        reference back();
+        size_type size() const { return (finish - start); }
+        bool empty() const { return finish == start; }
+        size_type max_size() const { return size_type(-1); }
 
-        void push_back(const value_type& value) { insert(end(), value); }
-        void push_front(const value_type& value) { insert(begin(), value); }
-        void pop_front() { erase(begin()); }
-        void pop_back() { iterator tmp = end(); erase(--tmp); }
-
-        iterator begin() { return (link_type)(node->next); }
-        iterator end() { return node; }
-        const_iterator begin() const;
-        const_iterator end() const;
-
-        bool operator == (const list& rhs) const;
-        bool operator != (const list& rhs) const;
-
-        iterator insert(iterator position, const value_type& val);
-        void insert(iterator position, size_type n, const value_type& val);
-        template<class InputIterator>
-        void insert(iterator position, InputIterator first, InputIterator last);
+        void push_back(const value_type& value);
+        void push_front(const value_type& value);
+        void pop_back();
+        void pop_front();
+        void clear();
+        void shrink_to_fit();
+        void resize(size_type new_size);
+        void swap(deque& rhs);
         iterator erase(iterator position);
         iterator erase(iterator first, iterator last);
-        void clear();
-        void remove(const value_type& val);
-        void unique();
-        void splice(iterator position, list& x);
-        void splice(iterator position, list&, iterator i);
-        void splice(iterator position, list&, iterator first, iterator last);
-        void merge(list& x);
-        template<class Compare>
-        void merge(list& x, Compare comp);
-        void reverse();
-        void swap(list& rhs);
-        void sort();
-        template<class Compare>
-        void sort(Compare comp);
+        iterator insert(iterator position, const value_type& value);
+        void insert(iterator position, size_type n, const value_type& value);
+        template<class InputIterator>
+        void insert(iterator position, InputIterator first, InputIterator last);
 
     private:
-        link_type get_node() { return list_node_allocator::allocate(); }
-        void put_node(link_type p) { list_node_allocator::deallocate(p); }
-        link_type creat_node(const value_type& val);
-        void destroy_node(link_type p);
-        void empty_initialize();
-        void transfer(iterator positiopn, iterator first, iterator last);
-        const_iterator changeIteratorToConstIterator(iterator& ptr);
+        size_t initial_map_size() { return MIN_NODE_SIZE; }
 
-    public:
-        template<class T1, class Alloc1>
-        friend void swap(list<T1, Alloc1>& lhs, list<T1, Alloc1>& rhs);
-        template<class T1, class Alloc1>
-        friend bool operator==(const list<T1, Alloc1>& lhs, const list<T1, Alloc1>& rhs);
-        template<class T1, class Alloc1>
-        friend bool operator!=(const list<T1, Alloc1>& lhs, const list<T1, Alloc1>& rhs);
+        void fill_initialize(size_type n, const value_type& value);
+        void creat_map_and_nodes(size_type n);
+        void push_back_aux(const value_type& value);
+        void push_front_aux(const value_type& value);
+        void pop_back_aux();
+        void pop_front_aux();
+        void reverse_map_at_back(size_type nodes_to_add = 1);
+        void reverse_map_at_front(size_type nodes_to_add = 1);
+        void reallocate_map(size_type nodes_to_add, bool add_at_front);
+        iterator insert_aux(iterator position, const value_type& value);
+        pointer allocate_node() { return data_allocator::allocate(buffer_size()); }
+        void deallocate_node(pointer p) { data_allocator::deallocate(p, buffer_size()); }
+
+    private:
+        using data_allocator = simple_alloc<T, Alloc>;
+        using map_allocator = simple_alloc<pointer, Alloc>;
     };
 }
-
-#include "impl/list.impl.h"
-#endif // LIST_H_INCLUDED
+#include "impl/deque.impl.h"
+#endif // DEQUE_H_INCLUDED
