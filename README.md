@@ -10,4 +10,8 @@
 - Win10 Centos
 ### 进度
 - vector  done
-- list 90%
+- list 
+- deque
+- priority_queue
+- queue
+- stack
