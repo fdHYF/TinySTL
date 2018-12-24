@@ -5,40 +5,15 @@ namespace TinySTL
 {
     namespace Base
     {
-        //迭代器操作
-        template<class T>
-        _list_iterator<T>& _list_iterator<T>::operator++() {
-            p = p->next;
-            return *this;
-        }
-
-        template<class T>
-        _list_iterator<T> _list_iterator<T>::operator++(int) {
-            auto tmp = *this;
-            ++*this;
-            return tmp;
-        }
-
-        template<class T>
-        _list_iterator<T>& _list_iterator<T>::operator--() {
-            p = p->prev;
-            return p;
-        }
-
-        template<class T>
-        _list_iterator<T> _list_iterator<T>::operator--(int) {
-            auto tmp = *this;
-            ++*this;
-            return tmp;
-        }
-
-        template<class T>
-        bool operator == (const _list_iterator<T>& lhs, const _list_iterator<T>& rhs) {
+        template<class T,class Ref, class Ptr>
+        bool operator == (const _list_iterator<T, Ref, Ptr>& lhs,
+                          const _list_iterator<T, Ref, Ptr>& rhs) {
             return lhs.p == rhs.p;
         }
 
-        template<class T>
-        bool operator != (const _list_iterator<T>& lhs, const _list_iterator<T>& rhs) {
+        template<class T,class Ref, class Ptr>
+        bool operator != (const _list_iterator<T, Ref, Ptr>& lhs,
+                          const _list_iterator<T, Ref, Ptr>& rhs) {
             return !(lhs == rhs);
         }
     }//end of namespace Base
@@ -78,7 +53,8 @@ namespace TinySTL
     template<class T, class Alloc>
     list<T, Alloc>& list<T, Alloc>::operator = (const list& rhs) {
         if(this != &rhs) {
-            list(rhs).swap(*this);
+            list tmp(rhs);
+            swap(tmp);
         }
         return *this;
     }
