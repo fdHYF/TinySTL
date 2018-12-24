@@ -22,47 +22,67 @@ namespace TinySTL
         };
 
         //list迭代器设计
-        template<class T>
-        struct _list_iterator : public iterator<bidirectional_iterator_tag, T> {
-            template<class T1, class Alloc>
-            friend class list;
+        template<class T,class Ref, class Ptr>
+        struct _list_iterator {
         public:
+            using iterator                  = _list_iterator<T, T&, T*>;
+            using self                      = _list_iterator<T, Ref, Ptr>;
+
+            using iterator_category         = bidirectional_iterator_tag;
+            using value_type                = T;
+            using reference                 = Ref;
+            using pointer                   = Ptr;
+            using size_type                 = size_t;
+            using difference_type           = ptrdiff_t;
+
             using link_type = _list_node<T>*;
             link_type p;
 
             //constructor
-            _list_iterator(link_type x) : p(x) {}
+            _list_iterator(const link_type x) : p(x) {}
             _list_iterator() {}
             _list_iterator(const _list_iterator& x) : p(x.p) {}
 
             //迭代器操作
-            _list_iterator& operator++();
-            _list_iterator operator++(int);
-            _list_iterator& operator--();
-            _list_iterator operator--(int);
+            _list_iterator& operator++() {
+                p = p->next;
+                return *this;
+            }
+            _list_iterator operator++(int) {
+                auto tmp = *this;
+                ++*this;
+                return tmp;
+            }
+            _list_iterator& operator--() {
+                p = p->prev;
+                return p;
+            }
+            _list_iterator operator--(int) {
+                auto tmp = *this;
+                ++*this;
+                return tmp;
+            }
 
             T& operator*() const { return p->data; }
             T* operator->() const { return &(operator*()); }
 
-            template<class T1>
-            friend bool operator == (const _list_iterator<T1>& lhs, const _list_iterator<T1>& rhs);
-            template<class T1>
-            friend bool operator != (const _list_iterator<T1>& lhs, const _list_iterator<T1>& rhs);
+            template<class T_, class Ref_, class Ptr_>
+            friend bool operator == (const _list_iterator<T_, Ref_, Ptr_>& lhs,
+                                     const _list_iterator<T_, Ref_, Ptr_>& rhs);
+            template<class T_, class Ref_, class Ptr_>
+            friend bool operator != (const _list_iterator<T_, Ref_, Ptr_>& lhs,
+                                     const _list_iterator<T_, Ref_, Ptr_>& rhs);
         };
     }//end of namespace Base
 
     template<class T, class Alloc = alloc>
     class list {
     public:
-        template<class T1>
-        friend class _list_iterator;
-
-    public:
         using value_type            = T;
         using size_type             = size_t;
         using reference             = T&;
-        using iterator              = Base::_list_iterator<T>;
-        using const_iterator        = Base::_list_iterator<const T>;
+        using iterator              = Base::_list_iterator<T, T&, T*>;
+        using const_iterator        = Base::_list_iterator<T, const T&, const T*>;
 
     private:
         using list_node             = Base::_list_node<T>;
@@ -93,8 +113,8 @@ namespace TinySTL
 
         iterator begin() { return (link_type)(node->next); }
         iterator end() { return node; }
-        const_iterator begin() const;
-        const_iterator end() const;
+        const_iterator begin() const { return (link_type)(node->next); }
+        const_iterator end() const { return node; }
 
         bool operator == (const list& rhs) const;
         bool operator != (const list& rhs) const;
