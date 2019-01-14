@@ -33,3 +33,12 @@
  |std::vector&lt;int>|10万|1|
  |std::vector&lt;int>|100万|8|
  |std::vector&lt;int>|1000万|109|
+ 
+ |Container|Size|Times(ms)|
+ |--------|------|-----|
+ TinySTL::vector&lt;std::string>|10万|5|
+ TinySTL::vector&lt;std::string>|100万|47|
+ TinySTL::vector&lt;std::string>|1000万|579|
+ |std::vector&lt;std::string>|10万|5|
+ |std::vector&lt;std::string>|100万|46|
+ |std::vector&lt;std::string>|1000万|579|
