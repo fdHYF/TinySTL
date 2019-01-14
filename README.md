@@ -22,3 +22,15 @@
 - set
 - multiset
 - multimap
+### 性能测试
+测试环境为Win10+Code::Blocks+release模式
+#### vector
+##### vector<int>
+|Container|Size|Times(ms)|
+|-----|-------|---|-----|
+|TinySTL::vector<int>|10万|1|
+ |TinySTL::vector<int>|100万|8|
+ |TinySTL::vector<int>|1000万|141|
+ |std::vector<int>|10万|1|
+ |std::vector<int>|100万|8|
+ |std::vector<int>|1000万|109|
