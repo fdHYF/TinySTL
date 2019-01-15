@@ -30,7 +30,7 @@ namespace TinySTL
         vector(const vector& rhs);
         vector(vector&& rhs) noexcept;
         vector& operator = (const vector& rhs);
-        vector& operator = (vector&&rhs);
+        vector& operator = (vector&&rhs) noexcept;
         ~vector();
 
         //比较操作
@@ -40,7 +40,7 @@ namespace TinySTL
         //迭代器相关操作
         iterator begin() { return start; }
         iterator end() { return finish; }
-        const_iterator begin() const {return start; }
+        const_iterator begin() const { return start; }
         const_iterator end() const { return finish; }
         const_iterator cbegin() const { return start; }
         const_iterator cend() const { return finish; }
