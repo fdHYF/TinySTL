@@ -6,6 +6,8 @@ bash "${STEAMCMDDIR}/steamcmd.sh" +login anonymous \
 				+app_update "${STEAMAPPID}" \
 				+quit
 
+IFS='-'
+
 # We assume that if the config is missing, that this is a fresh container
 if [ ! -f "${STEAMAPPDIR}/${STEAMAPP}/cfg/server.cfg" ]; then
 	# Download & extract the config
@@ -25,31 +27,47 @@ if [ ! -f "${STEAMAPPDIR}/${STEAMAPP}/cfg/server.cfg" ]; then
 
 	# Change hostname on first launch (you can comment this out if it has done it's purpose)
 	sed -i -e 's/{{SERVER_HOSTNAME}}/'"${SRCDS_HOSTNAME}"'/g' "${STEAMAPPDIR}/${STEAMAPP}/cfg/server.cfg"
+
+	# add sourcemod admin
+	# we can add multi admin
+	if [ ! -z "$SOURCEMOD_ADMIN" ]; then
+	  read -a admins <<< "$SOURCEMOD_ADMIN"
+	  for admin in ${admins}
+	  do
+	    echo "${admin} 99:z" >> "${STEAMAPPDIR}/${STEAMAPP}"/addons/sourcemod/configs/admins_simple.ini
+	  done
+	fi
 fi
+
+wget https://ptah.zizt.ru/files/PTaH-V1.1.3-build19-linux.zip | unzip -d "${STEAMAPPDIR}/${STEAMAPP}"
+wget -qO- https://github.com/kgns/gloves/archive/v1.0.3.tar.gz | tar xvzf - -C "${HOMEDIR}"
+wget -qO- https://github.com/kgns/weapons/archive/v1.7.0.tar.gz | tar xvzf - -C "${HOMEDIR}"
+
+find "${HOMEDIR}"/gloves-1.0.3/addons/ -type f | xargs -I source_file cp source_file "${STEAMAPPDIR}/${STEAMAPP}"
+find "${HOMEDIR}"/gloves-1.0.3/cfg/ -type f | xargs -I source_file cp source_file "${STEAMAPPDIR}/${STEAMAPP}"
+
+find "${HOMEDIR}"/weapons-1.0.3/addons/ -type f | xargs -I source_file cp source_file "${STEAMAPPDIR}/${STEAMAPP}"
+find "${HOMEDIR}"/weapons-1.0.3/cfg/ -type f | xargs -I source_file cp source_file "${STEAMAPPDIR}/${STEAMAPP}"
+
+sed -i -e '/FollowCSGOServerGuidelines/s/yes/no/g' "${STEAMAPPDIR}/${STEAMAPP}/addons/sourcemod/configs/core.cfg"
 
 # Believe it or not, if you don't do this srcds_run shits itself
 cd ${STEAMAPPDIR}
 
-# 当传入多个token时，分割为列表
-IFS='-'
-read -ra PORT <<< "${SRCDS_PORT}"
-read -rA TV_PORT <<< "${SRCDS_TV_PORT}"
-read -ra TOKEN <<< "${SRCDS_TOKEN}"
-read -ra MODE <<< "${SRCDS_GAMEMODE}"
-read -ra TYPE <<< "${SRCDS_GAMETYPE}"
+read -a PORT <<< "${SRCDS_PORT}"
+read -a TV_PORT <<< "${SRCDS_TV_PORT}"
+read -a TOKEN <<< "${SRCDS_TOKEN}"
+read -a MODE <<< "${SRCDS_GAMEMODE}"
+read -a TYPE <<< "${SRCDS_GAMETYPE}"
 
 NUM=${#PORT[@]}
-for((i=0;i<${NUM};++i))
+for((i=0;i<${NUM};i++))
 do
-# 当启动服务不止一个是，端口默认从27015开始
-srcds_port=PORT[i]
-srcds_tv_port=TV_PORT[i]
-srcds_token=TOKEN[i]
-srcds_gamemode=MODE[i]
-srcds_gametype=TYPE[i]
-echo ${srcds_port}
-echo ${srcds_tv_port}
-echo ${srcds_token}
+srcds_port=${PORT[i]}
+srcds_tv_port=${TV_PORT[i]}
+srcds_token=${TOKEN[i]}
+srcds_gamemode=${MODE[i]}
+srcds_gametype=${TYPE[i]}
 bash "${STEAMAPPDIR}/srcds_run" -game "${STEAMAPP}" -console -autoupdate \
 			-steam_dir "${STEAMCMDDIR}" \
 			-steamcmd_script "${HOMEDIR}/${STEAMAPP}_update.txt" \
@@ -73,5 +91,11 @@ bash "${STEAMAPPDIR}/srcds_run" -game "${STEAMAPP}" -console -autoupdate \
 			+host_workshop_collection "${SRCDS_HOST_WORKSHOP_COLLECTION}" \
 			+workshop_start_map "${SRCDS_WORKSHOP_START_MAP}" \
 			-authkey "${SRCDS_WORKSHOP_AUTHKEY}" \
-			"${ADDITIONAL_ARGS}"
+			"${ADDITIONAL_ARGS}"\
+			> /home/steam/"${srcds_port}".log 2>&1 &
+done
+
+while : 
+do
+sleep 1
 done
